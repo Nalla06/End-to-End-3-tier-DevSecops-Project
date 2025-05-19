@@ -1,5 +1,5 @@
 # .gitignore
-.terraform/
+**/.terraform/
 *.tfstate
 *.tfstate.backup
 crash.log
