@@ -14,3 +14,12 @@ resource "aws_instance" "ec2" {
     Name = var.instance-name
   }
 }
+resource "aws_ecr_repository" "three_tier_repo" {
+  name                 = "three-tier-repo"
+  image_tag_mutability = "MUTABLE"
+
+  tags = {
+    Name = "three-tier-repo"
+  }
+}
+
