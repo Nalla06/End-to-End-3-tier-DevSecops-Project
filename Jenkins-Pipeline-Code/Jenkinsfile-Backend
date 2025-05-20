@@ -81,22 +81,20 @@ pipeline {
                         def REPOSITORY_URI = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com"
 
                         dir('Application-Code/backend') {
-                            // Step 1: Clean up Docker resources
+                            // Clean up Docker resources
                             sh '''
                                 docker system prune -f || true
                                 docker container prune -f || true
                             '''
-                            
-                            // Step 2: Build Docker image
+
+                            // Build Docker image
                             sh "docker build -t ${AWS_ECR_REPO_NAME} . || exit 1"
-                            
-                            // Step 3: Prepare ECR login and create repository if needed
+
+                            // Prepare ECR login and repository
                             sh """#!/bin/bash
-                                # Define variables without exposing secrets in logs
                                 ECR_REPO_NAME=\${AWS_ECR_REPO_NAME}
                                 AWS_REGION=${AWS_DEFAULT_REGION}
-                                
-                                # Create repository if it doesn't exist
+
                                 echo "Checking if repository \${ECR_REPO_NAME} exists..."
                                 if ! aws ecr describe-repositories --repository-names \${ECR_REPO_NAME} --region \${AWS_REGION} 2>/dev/null; then
                                     echo "Repository \${ECR_REPO_NAME} does not exist. Creating it..."
@@ -105,24 +103,19 @@ pipeline {
                                 else
                                     echo "Repository \${ECR_REPO_NAME} already exists."
                                 fi
-                                
-                                # Get the ECR URI without exposing the account ID in logs
+
                                 ECR_URI=\$(aws ecr describe-repositories --repository-names \${ECR_REPO_NAME} --region \${AWS_REGION} --query 'repositories[0].repositoryUri' --output text)
                                 echo "ECR Repository URI: \${ECR_URI}"
-                                
-                                # Login to ECR
+
                                 echo "Logging in to ECR..."
                                 aws ecr get-login-password --region \${AWS_REGION} | docker login --username AWS --password-stdin \${ECR_URI%%/*}
-                                
-                                # Tag the Docker image
+
                                 echo "Tagging image as \${ECR_URI}:${BUILD_NUMBER}"
                                 docker tag \${ECR_REPO_NAME} \${ECR_URI}:${BUILD_NUMBER}
-                                
-                                # Push to ECR
+
                                 echo "Pushing image to ECR..."
                                 docker push \${ECR_URI}:${BUILD_NUMBER}
-                                
-                                # Save the ECR URI for later stages
+
                                 echo "\${ECR_URI}" > /tmp/ecr_uri.txt
                             """
                         }
@@ -134,7 +127,6 @@ pipeline {
         stage("TRIVY Image Scan") {
             steps {
                 script {
-                        script {
                     withCredentials([
                         string(credentialsId: 'ACCOUNT_ID', variable: 'AWS_ACCOUNT_ID'),
                         string(credentialsId: 'three-tier-repo', variable: 'AWS_ECR_REPO_NAME'),
@@ -142,14 +134,12 @@ pipeline {
                     ]) {
                         catchError(buildResult: 'UNSTABLE', stageResult: 'UNSTABLE') {
                             sh """#!/bin/bash
-                                # Get the ECR URI from the file saved in previous stage
                                 ECR_URI=\$(cat /tmp/ecr_uri.txt)
                                 echo "Scanning image: \${ECR_URI}:${BUILD_NUMBER}"
                                 trivy image \${ECR_URI}:${BUILD_NUMBER} > trivyimage.txt || echo 'Trivy image scan completed with issues'
                             """
                         }
                     }
-                }
                 }
             }
         }
@@ -160,57 +150,42 @@ pipeline {
                     withCredentials([
                         string(credentialsId: 'github', variable: 'GITHUB_TOKEN'),
                         string(credentialsId: 'ACCOUNT_ID', variable: 'AWS_ACCOUNT_ID'),
-                        string(credentialsId: 'three-tier-repo', variable: 'AWS_ECR_REPO_NAME')
+                        string(credentialsId: 'three-tier-repo', variable: 'AWS_ECR_REPO_NAME'),
+                        [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-key']
                     ]) {
                         script {
-                            withCredentials([
-                                string(credentialsId: 'github', variable: 'GITHUB_TOKEN'),
-                                string(credentialsId: 'ACCOUNT_ID', variable: 'AWS_ACCOUNT_ID'),
-                                string(credentialsId: 'three-tier-repo', variable: 'AWS_ECR_REPO_NAME'),
-                                [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-key']
-                            ]) {
-                                // Use a different approach to avoid security warnings
-                                // First, write a script file
-                                writeFile file: 'update_deployment.sh', text: '''#!/bin/bash
-                                    # Get the ECR URI from the file saved in previous stage
-                                    ECR_URI=$(cat /tmp/ecr_uri.txt)
-                                    REPO_NAME=$(basename ${ECR_URI})
-                                    BUILD_NUMBER=$1
-                                    GH_TOKEN=$2
-                                    GIT_USER_NAME=$3
-                                    GIT_REPO_NAME=$4
-                                    
-                                    echo "Setting up git config"
-                                    git config user.email "lakshmi.rajyam06@gmail.com"
-                                    git config user.name "Nalla06"
+                            writeFile file: 'update_deployment.sh', text: '''#!/bin/bash
+                                ECR_URI=$(cat /tmp/ecr_uri.txt)
+                                REPO_NAME=$(basename ${ECR_URI})
+                                BUILD_NUMBER=$1
+                                GH_TOKEN=$2
+                                GIT_USER_NAME=$3
+                                GIT_REPO_NAME=$4
 
-                                    echo "Updating deployment file with image: ${ECR_URI}:${BUILD_NUMBER}"
-                                    
-                                    # Find the current image reference pattern in the deployment file
-                                    if grep -q "${REPO_NAME}:" deployment.yaml; then
-                                        # Extract the current tag if it exists
-                                        imageTag=$(grep -oP "(?<=${REPO_NAME}:)[^ \"\\n]+" deployment.yaml) || imageTag="latest"
-                                        echo "Current image tag: $imageTag, new tag: ${BUILD_NUMBER}"
-                                        
-                                        # Update the image tag
-                                        sed -i "s|${REPO_NAME}:$imageTag|${REPO_NAME}:${BUILD_NUMBER}|g" deployment.yaml || echo "Sed failed"
-                                    else
-                                        echo "Could not find image reference pattern in deployment.yaml. Please check the file format."
-                                        cat deployment.yaml
-                                    fi
-                                    
-                                    echo "Committing and pushing changes"
-                                    git add deployment.yaml
-                                    git commit -m "Update deployment Image to version ${BUILD_NUMBER}" || echo "No changes to commit"
-                                    git push https://${GH_TOKEN}@github.com/${GIT_USER_NAME}/${GIT_REPO_NAME}.git HEAD:main || echo "Git push failed"
-                                '''
-                                
-                                // Make the script executable
-                                sh 'chmod +x update_deployment.sh'
-                                
-                                // Run the script with parameters to avoid direct use of credentials in command
-                                sh "./update_deployment.sh '${BUILD_NUMBER}' '${GITHUB_TOKEN}' '${GIT_USER_NAME}' '${GIT_REPO_NAME}'"
-                            }
+                                echo "Setting up git config"
+                                git config user.email "lakshmi.rajyam06@gmail.com"
+                                git config user.name "Nalla06"
+
+                                echo "Updating deployment file with image: ${ECR_URI}:${BUILD_NUMBER}"
+
+                                if grep -q "${REPO_NAME}:" deployment.yaml; then
+                                    imageTag=$(grep -oP "(?<=${REPO_NAME}:)[^ \"\\n]+" deployment.yaml) || imageTag="latest"
+                                    echo "Current image tag: $imageTag, new tag: ${BUILD_NUMBER}"
+
+                                    sed -i "s|${REPO_NAME}:$imageTag|${REPO_NAME}:${BUILD_NUMBER}|g" deployment.yaml || echo "Sed failed"
+                                else
+                                    echo "Could not find image reference pattern in deployment.yaml. Please check the file format."
+                                    cat deployment.yaml
+                                fi
+
+                                echo "Committing and pushing changes"
+                                git add deployment.yaml
+                                git commit -m "Update deployment Image to version ${BUILD_NUMBER}" || echo "No changes to commit"
+                                git push https://${GH_TOKEN}@github.com/${GIT_USER_NAME}/${GIT_REPO_NAME}.git HEAD:main || echo "Git push failed"
+                            '''
+
+                            sh 'chmod +x update_deployment.sh'
+                            sh "./update_deployment.sh '${BUILD_NUMBER}' '${GITHUB_TOKEN}' '${GIT_USER_NAME}' '${GIT_REPO_NAME}'"
                         }
                     }
                 }
