@@ -39,17 +39,13 @@ dist/
 .env.production.local
 
 # ---------------------
-# Terraform
-# ---------------------
+# Ignore Terraform directories
 **/.terraform/
-*.tfstate
-*.tfstate.backup
-*.tfvars
-*.tfvars.json
-terraform.tfstate.d/
-crash.log
-.terraform.lock.hcl
-
+**/.terraform.lock.hcl
+**/terraform.tfstate
+**/terraform.tfstate.backup
+# Ignore provider binaries
+**/terraform-provider-aws*
 # ---------------------
 # Docker
 # ---------------------
