@@ -142,7 +142,7 @@ pipeline {
 
         stage('Update Deployment file') {
             steps {
-                dir('Kubernetes-Manifests-file/frontend') {
+                dir('Kubernetes-Manifests-file/Frontend') {
                     withCredentials([
                         string(credentialsId: 'github', variable: 'GITHUB_TOKEN'),
                         string(credentialsId: 'ACCOUNT_ID', variable: 'AWS_ACCOUNT_ID'),
