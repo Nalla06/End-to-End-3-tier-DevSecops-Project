@@ -7,7 +7,6 @@ pipeline {
     }
 
     environment {
-        // Assuming you've configured SonarQube Scanner as a tool
         AWS_DEFAULT_REGION = 'us-east-1'
         GIT_REPO_NAME = "End-to-End-three-tier-DevSecops-Project"
         GIT_USER_NAME = "Nalla06"
@@ -16,15 +15,7 @@ pipeline {
     stages {
         stage('Cleaning Workspace') {
             steps {
-                // Using more gentle cleanup approach with error handling
-                catchError(buildResult: 'SUCCESS', stageResult: 'SUCCESS') {
-                    sh '''
-                        # Try to clean with native commands first
-                        rm -rf .* || true
-                        rm -rf * || true
-                    '''
-                    cleanWs notFailBuild: true
-                }
+                cleanWs()
             }
         }
 
@@ -34,35 +25,17 @@ pipeline {
             }
         }
 
-        stage('Sonarqube Analysis') {
+        stage('SonarQube Analysis') {
             steps {
                 dir('Application-Code/backend') {
                     withSonarQubeEnv('sonar-server') {
-                        def scannerHome = tool name: 'SonarQubeScanner', type: 'hudson.plugins.sonar.SonarRunnerInstallation'
-                        sh "${scannerHome}/bin/sonar-scanner"
                         withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
-                            // Check if SonarQube Scanner exists before using it
                             sh '''
-                                echo "SonarQube Scanner path: $SCANNER_HOME"
-                                if [ -f "$SCANNER_HOME/bin/sonar-scanner" ]; then
-                                    $SCANNER_HOME/bin/sonar-scanner \\
-                                    -Dsonar.projectKey=three-tier-backend \\
-                                    -Dsonar.sources=. \\
-                                    -Dsonar.host.url=http://3.84.4.80:9000 \\
-                                    -Dsonar.login=$SONAR_TOKEN
-                                else
-                                    echo "SonarQube Scanner not found at $SCANNER_HOME/bin/sonar-scanner"
-                                    # Attempt to install SonarQube Scanner
-                                    wget https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.8.0.2856-linux.zip
-                                    unzip sonar-scanner-cli-4.8.0.2856-linux.zip
-                                    mv sonar-scanner-4.8.0.2856-linux sonar-scanner
-                                    chmod +x sonar-scanner/bin/sonar-scanner
-                                    ./sonar-scanner/bin/sonar-scanner \\
-                                    -Dsonar.projectKey=three-tier-backend \\
-                                    -Dsonar.sources=. \\
-                                    -Dsonar.host.url=http://3.84.4.80:9000 \\
-                                    -Dsonar.login=$SONAR_TOKEN
-                                fi
+                                /opt/sonar-scanner/bin/sonar-scanner \
+                                  -Dsonar.projectKey=three-tier-backend \
+                                  -Dsonar.sources=. \
+                                  -Dsonar.host.url=http://3.84.4.80:9000 \
+                                  -Dsonar.login=$SONAR_TOKEN
                             '''
                         }
                     }
@@ -72,7 +45,6 @@ pipeline {
 
         stage('Quality Check') {
             steps {
-                // Handle potential quality gate issues gracefully
                 catchError(buildResult: 'UNSTABLE', stageResult: 'UNSTABLE') {
                     waitForQualityGate abortPipeline: false, credentialsId: 'sonar-token'
                 }
@@ -91,7 +63,6 @@ pipeline {
         stage('Trivy File Scan') {
             steps {
                 dir('Application-Code/backend') {
-                    // Add error handling for Trivy
                     catchError(buildResult: 'UNSTABLE', stageResult: 'UNSTABLE') {
                         sh 'trivy fs . > trivyfs.txt || echo "Trivy scan completed with issues"'
                     }
@@ -110,11 +81,8 @@ pipeline {
 
                         dir('Application-Code/backend') {
                             sh '''
-                                # Add error handling for Docker operations
                                 docker system prune -f || true
                                 docker container prune -f || true
-                                
-                                # Build and push with proper error checking
                                 docker build -t ${AWS_ECR_REPO_NAME} . || exit 1
                                 aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${REPOSITORY_URI} || exit 1
                                 docker tag ${AWS_ECR_REPO_NAME} ${REPOSITORY_URI}/${AWS_ECR_REPO_NAME}:${BUILD_NUMBER} || exit 1
@@ -152,35 +120,27 @@ pipeline {
                     ]) {
                         script {
                             def REPOSITORY_URI = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com"
-                            sh """
+                            sh '''
                                 git config user.email "lakshmi.rajyam06@gmail.com"
                                 git config user.name "Nalla06"
-                                echo "Current BUILD_NUMBER: $BUILD_NUMBER"
-                                
-                                # More robust grep pattern with error handling
-                                imageTag=\$(grep -oP '(?<=backend:)[^ ]+' deployment.yaml) || imageTag="latest"
-                                echo "Old Image Tag: \$imageTag"
-                                
-                                # Use more robust sed with error checking
-                                sed -i "s|\${AWS_ECR_REPO_NAME}:\$imageTag|\${AWS_ECR_REPO_NAME}:${BUILD_NUMBER}|g" deployment.yaml || echo "Sed failed but continuing"
-                                
-                                # Git operations with proper error checking
+
+                                imageTag=$(grep -oP '(?<=backend:)[^ ]+' deployment.yaml) || imageTag="latest"
+                                sed -i "s|${AWS_ECR_REPO_NAME}:$imageTag|${AWS_ECR_REPO_NAME}:${BUILD_NUMBER}|g" deployment.yaml || echo "Sed failed"
+
                                 git add deployment.yaml
                                 git commit -m "Update deployment Image to version ${BUILD_NUMBER}" || echo "No changes to commit"
-                                git push https://${GITHUB_TOKEN}@github.com/${GIT_USER_NAME}/${GIT_REPO_NAME}.git HEAD:master || echo "Git push failed - please check repository access"
-                            """
+                                git push https://${GITHUB_TOKEN}@github.com/${GIT_USER_NAME}/${GIT_REPO_NAME}.git HEAD:master || echo "Git push failed"
+                            '''
                         }
                     }
                 }
             }
         }
     }
-    
-    // Add post-build cleanup to ensure workspace is properly released
+
     post {
         always {
-            // Clean workspace after build to release any locks
-            cleanWs notFailBuild: true
+            cleanWs()
         }
     }
 }
