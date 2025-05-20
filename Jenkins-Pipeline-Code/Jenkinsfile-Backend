@@ -81,17 +81,38 @@ pipeline {
                         def REPOSITORY_URI = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com"
 
                         dir('Application-Code/backend') {
+                            // Step 1: Clean up Docker resources
                             sh '''
                                 docker system prune -f || true
                                 docker container prune -f || true
-                                docker build -t ${AWS_ECR_REPO_NAME} . || exit 1
-                                # Configure Docker to use the ECR repository
-                                aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${REPOSITORY_URI}
-                                # Tag with the full ECR repository URI
-                                docker tag ${AWS_ECR_REPO_NAME} ${REPOSITORY_URI}/${AWS_ECR_REPO_NAME}:${BUILD_NUMBER} || exit 1
-                                # Push the image to ECR
-                                docker push ${REPOSITORY_URI}/${AWS_ECR_REPO_NAME}:${BUILD_NUMBER} || exit 1
                             '''
+                            
+                            // Step 2: Build Docker image
+                            sh "docker build -t ${AWS_ECR_REPO_NAME} . || exit 1"
+                            
+                            // Step 3: Prepare ECR login (broken into explicit steps for debugging)
+                            def ecrUri = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com"
+                            echo "ECR Repository URI: ${ecrUri}"
+                            
+                            // Step 4: Login to ECR with careful variable handling
+                            sh """
+                                echo "Attempting to login to ECR at: ${ecrUri}"
+                                aws ecr get-login-password --region ${AWS_DEFAULT_REGION} > ecr_password.txt
+                                cat ecr_password.txt | docker login --username AWS --password-stdin ${ecrUri}
+                                rm -f ecr_password.txt
+                            """
+                            
+                            // Step 5: Tag the Docker image
+                            sh """
+                                echo "Tagging image: ${AWS_ECR_REPO_NAME} as ${ecrUri}/${AWS_ECR_REPO_NAME}:${BUILD_NUMBER}"
+                                docker tag ${AWS_ECR_REPO_NAME} ${ecrUri}/${AWS_ECR_REPO_NAME}:${BUILD_NUMBER} || exit 1
+                            """
+                            
+                            // Step 6: Push to ECR
+                            sh """
+                                echo "Pushing image to: ${ecrUri}/${AWS_ECR_REPO_NAME}:${BUILD_NUMBER}"
+                                docker push ${ecrUri}/${AWS_ECR_REPO_NAME}:${BUILD_NUMBER} || exit 1
+                            """
                         }
                     }
                 }
@@ -101,15 +122,20 @@ pipeline {
         stage("TRIVY Image Scan") {
             steps {
                 script {
+                        script {
                     withCredentials([
                         string(credentialsId: 'ACCOUNT_ID', variable: 'AWS_ACCOUNT_ID'),
                         string(credentialsId: 'three-tier-repo', variable: 'AWS_ECR_REPO_NAME')
                     ]) {
-                        def REPOSITORY_URI = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com"
+                        def ecrUri = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com"
                         catchError(buildResult: 'UNSTABLE', stageResult: 'UNSTABLE') {
-                            sh "trivy image ${REPOSITORY_URI}/${AWS_ECR_REPO_NAME}:${BUILD_NUMBER} > trivyimage.txt || echo 'Trivy image scan completed with issues'"
+                            sh """
+                                echo "Scanning image: ${ecrUri}/${AWS_ECR_REPO_NAME}:${BUILD_NUMBER}"
+                                trivy image ${ecrUri}/${AWS_ECR_REPO_NAME}:${BUILD_NUMBER} > trivyimage.txt || echo 'Trivy image scan completed with issues'
+                            """
                         }
                     }
+                }
                 }
             }
         }
@@ -123,18 +149,29 @@ pipeline {
                         string(credentialsId: 'three-tier-repo', variable: 'AWS_ECR_REPO_NAME')
                     ]) {
                         script {
-                            def REPOSITORY_URI = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com"
-                            sh '''
-                                git config user.email "lakshmi.rajyam06@gmail.com"
-                                git config user.name "Nalla06"
+                            withCredentials([
+                                string(credentialsId: 'github', variable: 'GITHUB_TOKEN'),
+                                string(credentialsId: 'ACCOUNT_ID', variable: 'AWS_ACCOUNT_ID'),
+                                string(credentialsId: 'three-tier-repo', variable: 'AWS_ECR_REPO_NAME')
+                            ]) {
+                                def ecrUri = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com"
+                                sh """
+                                    echo "Setting up git config"
+                                    git config user.email "lakshmi.rajyam06@gmail.com"
+                                    git config user.name "Nalla06"
 
-                                imageTag=$(grep -oP '(?<=backend:)[^ ]+' deployment.yaml) || imageTag="latest"
-                                sed -i "s|${AWS_ECR_REPO_NAME}:$imageTag|${AWS_ECR_REPO_NAME}:${BUILD_NUMBER}|g" deployment.yaml || echo "Sed failed"
-
-                                git add deployment.yaml
-                                git commit -m "Update deployment Image to version ${BUILD_NUMBER}" || echo "No changes to commit"
-                                git push https://${GITHUB_TOKEN}@github.com/${GIT_USER_NAME}/${GIT_REPO_NAME}.git HEAD:main || echo "Git push failed"
-                            '''
+                                    echo "Updating deployment file with image: ${AWS_ECR_REPO_NAME}:${BUILD_NUMBER}"
+                                    imageTag=\$(grep -oP '(?<=backend:)[^ ]+' deployment.yaml) || imageTag="latest"
+                                    echo "Current image tag: \$imageTag, new tag: ${BUILD_NUMBER}"
+                                    
+                                    sed -i "s|${AWS_ECR_REPO_NAME}:\$imageTag|${AWS_ECR_REPO_NAME}:${BUILD_NUMBER}|g" deployment.yaml || echo "Sed failed"
+                                    
+                                    echo "Committing and pushing changes"
+                                    git add deployment.yaml
+                                    git commit -m "Update deployment Image to version ${BUILD_NUMBER}" || echo "No changes to commit"
+                                    git push https://${GITHUB_TOKEN}@github.com/${GIT_USER_NAME}/${GIT_REPO_NAME}.git HEAD:main || echo "Git push failed"
+                                """
+                            }
                         }
                     }
                 }
