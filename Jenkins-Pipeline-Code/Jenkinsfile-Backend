@@ -26,13 +26,16 @@ pipeline {
             steps {
                 dir('Application-Code/backend') {
                     withSonarQubeEnv('sonar-server') {
-                        sh ''' $SCANNER_HOME/bin/sonar-scanner \
-                        -Dsonar.projectName=three-tier-backend \
-                        -Dsonar.projectKey=three-tier-backend '''
+                        sh '''$SCANNER_HOME/bin/sonar-scanner \
+                        -Dsonar.projectKey=three-tier-backend \
+                        -Dsonar.sources=. \
+                        -Dsonar.host.url=http://100.26.183.150:9000 \
+                        -Dsonar.login=$SONAR_TOKEN'''
                     }
                 }
             }
         }
+
         stage('Quality Check') {
             steps {
                 script {
