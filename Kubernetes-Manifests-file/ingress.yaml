@@ -11,7 +11,7 @@ metadata:
 spec:
   ingressClassName: alb
   rules:
-    - host: nallalakshmirajyam.click
+    - host: backend.nallalakshmirajyam.click
       http:
         paths:
           - path: /api
