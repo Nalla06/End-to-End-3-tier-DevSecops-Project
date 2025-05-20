@@ -154,38 +154,21 @@ pipeline {
                         [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-key']
                     ]) {
                         script {
-                            writeFile file: 'update_deployment.sh', text: '''#!/bin/bash
-                                ECR_URI=$(cat /tmp/ecr_uri.txt)
-                                REPO_NAME=$(basename ${ECR_URI})
-                                BUILD_NUMBER=$1
-                                GH_TOKEN=$2
-                                GIT_USER_NAME=$3
-                                GIT_REPO_NAME=$4
-
-                                echo "Setting up git config"
+                            sh """
                                 git config user.email "lakshmi.rajyam06@gmail.com"
                                 git config user.name "Nalla06"
 
-                                echo "Updating deployment file with image: ${ECR_URI}:${BUILD_NUMBER}"
+                                echo "Current BUILD_NUMBER: ${BUILD_NUMBER}"
 
-                                if grep -q "${REPO_NAME}:" deployment.yaml; then
-                                    imageTag=$(grep -oP "(?<=${REPO_NAME}:)[^ \"\\n]+" deployment.yaml) || imageTag="latest"
-                                    echo "Current image tag: $imageTag, new tag: ${BUILD_NUMBER}"
+                                imageTag=\$(grep -oP '(?<=backend:)[^ ]+' deployment.yaml || echo "latest")
+                                echo "Old Image Tag: \$imageTag"
 
-                                    sed -i "s|${REPO_NAME}:$imageTag|${REPO_NAME}:${BUILD_NUMBER}|g" deployment.yaml || echo "Sed failed"
-                                else
-                                    echo "Could not find image reference pattern in deployment.yaml. Please check the file format."
-                                    cat deployment.yaml
-                                fi
+                                sed -i "s|${AWS_ECR_REPO_NAME}:\$imageTag|${AWS_ECR_REPO_NAME}:${BUILD_NUMBER}|g" deployment.yaml || echo "Sed command failed or no changes made"
 
-                                echo "Committing and pushing changes"
                                 git add deployment.yaml
-                                git commit -m "Update deployment Image to version ${BUILD_NUMBER}" || echo "No changes to commit"
-                                git push https://${GH_TOKEN}@github.com/${GIT_USER_NAME}/${GIT_REPO_NAME}.git HEAD:main || echo "Git push failed"
-                            '''
-
-                            sh 'chmod +x update_deployment.sh'
-                            sh "./update_deployment.sh '${BUILD_NUMBER}' '${GITHUB_TOKEN}' '${GIT_USER_NAME}' '${GIT_REPO_NAME}'"
+                                git commit -m "Update backend image to ${BUILD_NUMBER}" || echo "No changes to commit"
+                                git push https://${GITHUB_TOKEN}@github.com/${GIT_USER_NAME}/${GIT_REPO_NAME}.git HEAD:master || echo "Git push failed"
+                            """
                         }
                     }
                 }
