@@ -1,0 +1,101 @@
+# ---------------------
+# Node.js (Backend/API)
+# ---------------------
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.env
+.env.local
+.env.*.local
+
+# Build output
+dist/
+build/
+coverage/
+logs/
+*.log
+
+# PM2 logs and dumps
+pids
+*.pid
+*.seed
+*.pid.lock
+dump.rdb
+
+# ---------------------
+# Frontend (React/Vue/Angular)
+# ---------------------
+node_modules/
+build/
+dist/
+.next/
+.nuxt/
+.vite/
+*.log
+.env
+.env.local
+.env.development.local
+.env.production.local
+
+# ---------------------
+# Ignore Terraform directories
+**/.terraform/
+**/.terraform.lock.hcl
+**/terraform.tfstate
+**/terraform.tfstate.backup
+# Ignore provider binaries
+**/terraform-provider-aws*
+# ---------------------
+# Docker
+# ---------------------
+*.tar
+*.img
+*.dockerfile
+Dockerfile.dev
+docker-compose.override.yml
+
+# ---------------------
+# Kubernetes
+# ---------------------
+*.kubeconfig
+*.kube
+kubeconfig.yaml
+
+# ---------------------
+# Jenkins
+# ---------------------
+# If you store Jenkinsfiles and config
+*.jenkins*
+*.bak
+*.old
+*.orig
+
+# Jenkins build artifacts
+**/target/
+**/builds/
+**/workspace/
+**/jobs/
+**/logs/
+*.log
+*.lastSuccessful
+*.lastStable
+
+# Jenkins secrets (do not track!)
+secrets/
+credentials.xml
+secret.key
+secret.key.not-so-secret
+*.hpi
+*.jpi
+
+# ---------------------
+# IDE/Editor Files
+# ---------------------
+.vscode/
+.idea/
+*.swp
+*.swo
+*.bak
+.DS_Store
+Thumbs.db
