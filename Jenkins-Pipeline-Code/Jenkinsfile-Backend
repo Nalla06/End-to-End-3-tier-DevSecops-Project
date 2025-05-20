@@ -21,7 +21,7 @@ pipeline {
 
         stage('Checkout from Git') {
             steps {
-                git credentialsId: 'GITHUB', branch: 'main', url: 'https://github.com/Nalla06/End-to-End-three-3-DevSecops-Project.git'
+                git credentialsId: 'GITHUB', branch: 'main', url: 'https://github.com/Nalla06/End-to-End-3-tier-DevSecops-Project.git'
             }
         }
 
