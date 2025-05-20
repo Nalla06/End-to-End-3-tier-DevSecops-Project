@@ -7,7 +7,7 @@ pipeline {
     environment  {
         SCANNER_HOME=tool 'sonar-scanner'
         AWS_ACCOUNT_ID = credentials('ACCOUNT_ID')
-        AWS_ECR_REPO_NAME = credentials('three-tier-repo')
+        AWS_ECR_REPO_NAME = credentials('3-tier-repo')
         AWS_DEFAULT_REGION = 'us-east-1'
         REPOSITORY_URI = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/"
     }
@@ -29,7 +29,7 @@ pipeline {
                         sh '''$SCANNER_HOME/bin/sonar-scanner \
                         -Dsonar.projectKey=three-tier-backend \
                         -Dsonar.sources=. \
-                        -Dsonar.host.url=http://100.26.183.150:9000 \
+                        -Dsonar.host.url=http://3.84.4.80:9000 \
                         -Dsonar.login=$SONAR_TOKEN'''
                     }
                 }
