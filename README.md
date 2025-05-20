@@ -47,3 +47,5 @@ The `Kubernetes-Manifests-Files` directory holds Kubernetes manifests for deploy
 - GitOps with ArgoCD - the cherry on top!
 
 📈 **The journey covered everything from setting up tools to deploying a Three-Tier app, ensuring data persistence, and implementing CI/CD pipelines.**
+export ARGO_PWD=$(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d)
+echo $ARGO_PWD
