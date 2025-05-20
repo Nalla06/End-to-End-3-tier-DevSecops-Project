@@ -40,6 +40,7 @@ pipeline {
                 }
             }
         }
+
         stage('Quality Check') {
             steps {
                 script {
@@ -47,6 +48,7 @@ pipeline {
                 }
             }
         }
+
         stage('OWASP Dependency-Check Scan') {
             steps {
                 dir('Application-Code/frontend') {
@@ -55,6 +57,7 @@ pipeline {
                 }
             }
         }
+
         stage('Trivy File Scan') {
             steps {
                 dir('Application-Code/frontend') {
@@ -62,6 +65,7 @@ pipeline {
                 }
             }
         }
+
         stage("Docker Image Build & Push") {
             steps {
                 script {
@@ -115,6 +119,7 @@ pipeline {
                 }
             }
         }
+
         stage("TRIVY Image Scan") {
             steps {
                 script {
@@ -134,12 +139,7 @@ pipeline {
                 }
             }
         }
-        stage('Checkout Code') {
-            steps {
-                git credentialsId: 'GITHUB', url: 'https://github.com/Nalla06/End-to-End-3-tier-DevSecops-Project.git'
-            }
-        }
-       
+
         stage('Update Deployment file') {
             steps {
                 dir('Kubernetes-Manifests-file/frontend') {
@@ -150,21 +150,28 @@ pipeline {
                         [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-key']
                     ]) {
                         script {
-                        sh '''
-                            git config user.email "lakshmi.rajyam06@gmail.com"
-                            git config user.name "Nalla06"
-                            BUILD_NUMBER=${BUILD_NUMBER}
-                            echo $BUILD_NUMBER
-                            imageTag=$(grep -oP '(?<=frontend:)[^ ]+' deployment.yaml)
-                            echo $imageTag
-                            sed -i "s/${AWS_ECR_REPO_NAME}:${imageTag}/${AWS_ECR_REPO_NAME}:${BUILD_NUMBER}/" deployment.yaml
-                            git add deployment.yaml
-                            git commit -m "Update deployment Image to version \${BUILD_NUMBER}"
-                            git push https://${GITHUB_TOKEN}@github.com/${GIT_USER_NAME}/${GIT_REPO_NAME} HEAD:master
-                        '''
+                            sh '''
+                                git config user.email "lakshmi.rajyam06@gmail.com"
+                                git config user.name "Nalla06"
+                                BUILD_NUMBER=${BUILD_NUMBER}
+                                echo $BUILD_NUMBER
+                                imageTag=$(grep -oP '(?<=frontend:)[^ ]+' deployment.yaml)
+                                echo $imageTag
+                                sed -i "s/${AWS_ECR_REPO_NAME}:${imageTag}/${AWS_ECR_REPO_NAME}:${BUILD_NUMBER}/" deployment.yaml
+                                git add deployment.yaml
+                                git commit -m "Update deployment Image to version ${BUILD_NUMBER}" || echo "Nothing to commit"
+                                git push https://${GITHUB_TOKEN}@github.com/${GIT_USER_NAME}/${GIT_REPO_NAME}.git HEAD:master || echo "Git push failed"
+                            '''
+                        }
                     }
                 }
             }
+        }
+    }
+
+    post {
+        always {
+            cleanWs notFailBuild: true
         }
     }
 }
