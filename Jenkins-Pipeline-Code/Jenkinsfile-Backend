@@ -75,6 +75,7 @@ pipeline {
                 script {
                     withCredentials([
                         string(credentialsId: 'ACCOUNT_ID', variable: 'AWS_ACCOUNT_ID'),
+                        [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-key'],
                         string(credentialsId: 'three-tier-repo', variable: 'AWS_ECR_REPO_NAME')
                     ]) {
                         def REPOSITORY_URI = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com"
