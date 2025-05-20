@@ -8,7 +8,7 @@ pipeline {
 
     environment {
         AWS_DEFAULT_REGION = 'us-east-1'
-        GIT_REPO_NAME = "End-to-End-three-tier-DevSecops-Project"
+        GIT_REPO_NAME = "End-to-End-3-tier-DevSecops-Project"
         GIT_USER_NAME = "Nalla06"
     }
 
