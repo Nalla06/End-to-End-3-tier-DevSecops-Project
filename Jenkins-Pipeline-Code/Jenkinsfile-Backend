@@ -7,7 +7,7 @@ pipeline {
     }
 
     environment {
-        SCANNER_HOME = tool 'SonarQubeScanner' // Assuming you've configured SonarQube Scanner as a tool
+        // Assuming you've configured SonarQube Scanner as a tool
         AWS_DEFAULT_REGION = 'us-east-1'
         GIT_REPO_NAME = "End-to-End-three-tier-DevSecops-Project"
         GIT_USER_NAME = "Nalla06"
@@ -38,6 +38,8 @@ pipeline {
             steps {
                 dir('Application-Code/backend') {
                     withSonarQubeEnv('sonar-server') {
+                        def scannerHome = tool name: 'SonarQubeScanner', type: 'hudson.plugins.sonar.SonarRunnerInstallation'
+                        sh "${scannerHome}/bin/sonar-scanner"
                         withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
                             // Check if SonarQube Scanner exists before using it
                             sh '''
