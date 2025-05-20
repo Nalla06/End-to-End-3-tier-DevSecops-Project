@@ -84,7 +84,7 @@ pipeline {
                                 docker system prune -f || true
                                 docker container prune -f || true
                                 docker build -t ${AWS_ECR_REPO_NAME} . || exit 1
-                                aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${REPOSITORY_URI} || exit 1
+                                aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${REPOSITORY_URI}
                                 docker tag ${AWS_ECR_REPO_NAME} ${REPOSITORY_URI}/${AWS_ECR_REPO_NAME}:${BUILD_NUMBER} || exit 1
                                 docker push ${REPOSITORY_URI}/${AWS_ECR_REPO_NAME}:${BUILD_NUMBER} || exit 1
                             '''
