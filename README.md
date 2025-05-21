@@ -12,6 +12,7 @@ This repository contains a complete implementation of a DevSecOps pipeline for d
 - [Kubernetes Manifests Files]
 
 
+
 <pre> ```bash
 📁 Repository Structure
 ├── application-code
@@ -73,28 +74,28 @@ Define Git, JDK, Docker, SonarQube, Trivy in Global Tool Config.
 
 Add credentials for AWS, GitHub, ECR, SonarQube, ArgoCD.
 ### Commands i used to install eck cluster and load balance, ingress and helm service.
-1. Create an eks cluster using the below commands.
+1. #### Create an eks cluster using the below commands.
 eksctl create cluster --name Three-Tier-K8s-EKS-Cluster --region us-east-1 --node-type t2.medium --nodes-min 2 --nodes-max 2
 aws eks update-kubeconfig --region us-east-1 --name Three-Tier-K8s-EKS-Cluster
 
 Once your cluster is created, you can validate whether your nodes are ready or not by the below command run 
 
 kubectl get nodes
-2. Now, we will configure the Load Balancer on our EKS because our application will have an ingress controller.
+2. ####  Now, we will configure the Load Balancer on our EKS because our application will have an ingress controller.
 Download the policy for the LoadBalancer prerequisite.
 curl -O https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/v2.5.4/docs/install/iam_policy.json
 Create the IAM policy using the below command
 aws iam create-policy --policy-name AWSLoadBalancerControllerIAMPolicy --policy-document file://iam_policy.json
 
-Create OIDC Provider
+3. #### Create OIDC Provider
 
 eksctl utils associate-iam-oidc-provider --region=us-east-1 --cluster=Three-Tier-K8s-EKS-Cluster --approve
 
-Create a Service Account by using below command and replace your account ID with your one
+4. #### Create a Service Account by using below command and replace your account ID with your one
 
 eksctl create iamserviceaccount --cluster=Three-Tier-K8s-EKS-Cluster --namespace=kube-system --name=aws-load-balancer-controller --role-name AmazonEKSLoadBalancerControllerRole --attach-policy-arn=arn:aws:iam::<your_account_id>:policy/AWSLoadBalancerControllerIAMPolicy --approve --region=us-east-1
 
-Run the below command to deploy the AWS Load Balancer Controller
+5. #### Run the below command to deploy the AWS Load Balancer Controller
 
 sudo snap install helm --classic
 helm repo add eks https://aws.github.io/eks-charts
