@@ -113,6 +113,7 @@ helm upgrade -i aws-load-balancer-controller eks/aws-load-balancer-controller \
   --set serviceAccount.create=false \
   --set serviceAccount.name=aws-load-balancer-controller \
   --set region=us-west-1 --set vpcId=<vpc#> -n kube-system
+  
 6. ### We need to create Amazon ECR Private Repositories for both Tiers (Frontend & Backend)
 
 7. ### Install & Configure ArgoCD
