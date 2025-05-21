@@ -6,26 +6,26 @@
 This repository contains a complete implementation of a DevSecOps pipeline for deploying a three-tier application (React frontend, Node.js backend, MongoDB) on AWS EKS using industry best practices. The project integrates security scanning, GitOps-based deployment, and comprehensive monitoring.
 
 ## Table of Contents
-- [Application Code](#application-code)
-- [Jenkins Pipeline Code](#jenkins-pipeline-code)
-- [Jenkins Server Terraform](#jenkins-server-terraform)
-- [Kubernetes Manifests Files](#kubernetes-manifests-files)
-<pre> ```bash 📁 Repository Structure ├── application-code/ │ └── backend/ # Node.js backend application code ├── frontend/ # React frontend application code ├── kubernetes/ # Kubernetes deployment manifests │ ├── backend/ # Backend service deployment │ ├── frontend/ # Frontend service deployment │ ├── Database/ # MongoDB deployment │ └── ingress/ # Ingress configuration ├── bootstrap-phase-terraform/ # Terraform scripts for S3 and DynamoDB ├── terraform-jenkins/ # Terraform scripts to provision Jenkins server ├── Jenkins-pipeline-code/ # CI/CD pipeline definition for frontend & backend └── README.md # This file ``` </pre>
+- [Application Code]
+- [Jenkins Pipeline Code]
+- [Jenkins Server Terraform]
+- [Kubernetes Manifests Files]
 
 
-📁 Repository Structure
-├── application-code
-     backend/                  # Node.js backend application code
-├── frontend/                 # React frontend application code
-├── kubernetes/               # Kubernetes deployment manifests
-│   ├── backend/              # Backend service deployment
-│   ├── frontend/             # Frontend service deployment
-│   ├── Database/             # MongoDB deployment
-│   └── ingress/              # ingress deployment
-├── bootstrap-phase-terarform/ # Terraform scripts for s3, dynamodb
-├── terraform-jenkins/        # Terraform scripts for Jenkins
-├── Jenkins-pipeline-code     # CI/CD pipeline definition for forntend,backend
-└── README.md                 # This file
+### Project structure
+.
+├── application-code/
+│   └── backend/
+├── frontend/
+├── kubernetes/
+│   ├── backend/
+│   ├── frontend/
+│   ├── Database/
+│   └── ingress/
+├── bootstrap-phase-terraform/
+├── terraform-jenkins/
+├── Jenkins-pipeline-code/
+└── README.md
 
 ## Project Details
 🛠️ **Tools Explored:**
