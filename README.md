@@ -10,6 +10,7 @@ This repository contains a complete implementation of a DevSecOps pipeline for d
 - [Jenkins Pipeline Code](#jenkins-pipeline-code)
 - [Jenkins Server Terraform](#jenkins-server-terraform)
 - [Kubernetes Manifests Files](#kubernetes-manifests-files)
+<pre> ```bash 📁 Repository Structure ├── application-code/ │ └── backend/ # Node.js backend application code ├── frontend/ # React frontend application code ├── kubernetes/ # Kubernetes deployment manifests │ ├── backend/ # Backend service deployment │ ├── frontend/ # Frontend service deployment │ ├── Database/ # MongoDB deployment │ └── ingress/ # Ingress configuration ├── bootstrap-phase-terraform/ # Terraform scripts for S3 and DynamoDB ├── terraform-jenkins/ # Terraform scripts to provision Jenkins server ├── Jenkins-pipeline-code/ # CI/CD pipeline definition for frontend & backend └── README.md # This file ``` </pre>
 
 
 📁 Repository Structure
