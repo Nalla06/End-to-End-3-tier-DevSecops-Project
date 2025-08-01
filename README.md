@@ -11,6 +11,30 @@ This repository contains a complete implementation of a DevSecOps pipeline for d
 - [Jenkins Server Terraform]
 - [Kubernetes Manifests Files]
 
+## Images taken while doing this project 
+
+1. GitHub Credentials Setup
+![GitHub Credentials](Images/01.Github_Credentials.png)
+2. Jenkins UI First Login (or Jenkins Setup)
+![Jenkins Setup](Images/06.png)
+3. Initial Jenkins Configuration
+![Jenkins Configuration](Images/02.png)
+![Global Tool Configuration](Images/03.png)
+4. Install ArgoCD on EKS
+![ArgoCD Installation](Images/04.Argocd-Installation.png)
+![First ArgoCD Login](Images/07.First_installation_Argocd.png)
+5. Load Balancer Created for ArgoCD / Ingress
+![LoadBalancer](Images/05.loadbalancer_created.png)
+![Ingress LB](Images/12.LoadBalancer.png)
+6. Configure ArgoCD Connection to Repo
+![ArgoCD Git Connection](Images/11.Argocd_Connection.png)
+7. Jenkins Pipelines (Backend & Frontend)
+![Jenkins Pipeline - Backend](Images/08.Jenkins_Pipeline_Backend.png)
+![Sonar Analysis](Images/08.Sonar_Analysis.png)
+![Jenkins Pipeline - Frontend](Images/09.Jenkins_Pipeline_Frontend.png)
+8. Final ArgoCD UI or Result
+![Final ArgoCD View](Images/10.png)
+![ArgoCD Sync](Images/13.png)
 
 
 <pre> ```bash
@@ -84,7 +108,9 @@ kubectl get nodes
 2. ####  Now, we will configure the Load Balancer on our EKS because our application will have an ingress controller.
 Download the policy for the LoadBalancer prerequisite.
 curl -O https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/v2.5.4/docs/install/iam_policy.json
+
 Create the IAM policy using the below command
+
 aws iam create-policy --policy-name AWSLoadBalancerControllerIAMPolicy --policy-document file://iam_policy.json
 
 3. #### Create OIDC Provider
@@ -221,29 +247,7 @@ Expose dashboards for pipeline and app monitoring.
 4. Ingress routes traffic → TLS secured with cert-manager
 
 5. Observability via Prometheus & Grafana
-Images taken while doing this project 
-1. GitHub Credentials Setup
-![GitHub Credentials](Images/01.Github_Credentials.png)
-2. Jenkins UI First Login (or Jenkins Setup)
-![Jenkins Setup](Images/06.png)
-3. Initial Jenkins Configuration
-![Jenkins Configuration](Images/02.png)
-![Global Tool Configuration](Images/03.png)
-4. Install ArgoCD on EKS
-![ArgoCD Installation](Images/04.Argocd-Installation.png)
-![First ArgoCD Login](Images/07.First_installation_Argocd.png)
-5. Load Balancer Created for ArgoCD / Ingress
-![LoadBalancer](Images/05.loadbalancer_created.png)
-![Ingress LB](Images/12.LoadBalancer.png)
-6. Configure ArgoCD Connection to Repo
-![ArgoCD Git Connection](Images/11.Argocd_Connection.png)
-7. Jenkins Pipelines (Backend & Frontend)
-![Jenkins Pipeline - Backend](Images/08.Jenkins_Pipeline_Backend.png)
-![Sonar Analysis](Images/08.Sonar_Analysis.png)
-![Jenkins Pipeline - Frontend](Images/09.Jenkins_Pipeline_Frontend.png)
-8. Final ArgoCD UI or Result
-![Final ArgoCD View](Images/10.png)
-![ArgoCD Sync](Images/13.png)
+
 
 
 
